@@ -50,7 +50,8 @@ app.post('/auth/login', async (req, reply) => {
     return reply.code(400).send({ error: 'Invalid payload', details: parsed.error.flatten() })
   }
   const { email, role } = parsed.data
-  if (role === 'System Admin' && !adminEmails.has(email)) {
+  const allowAllAdmins = String(process.env.ALLOW_ALL_ADMINS || '').toLowerCase() === 'true'
+  if (role === 'System Admin' && !allowAllAdmins && !adminEmails.has(email)) {
     return reply.code(403).send({ error: 'Forbidden role' })
   }
   await upsertUser(email, role)

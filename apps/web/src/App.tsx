@@ -54,8 +54,8 @@ function Login() {
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-    const ok = await login(email, role)
-    if (!ok) setError('Login failed')
+    const res = await login(email, role)
+    if (!res.ok) setError(res.error || 'Login failed')
     else {
       if (role === 'Cadet') nav('/cadet')
       else if (role === 'Officer') nav('/officer')
@@ -69,7 +69,7 @@ function Login() {
     <div className="mx-auto max-w-md px-4 py-8">
       <h2 className="text-xl font-semibold">Sign in</h2>
       <form onSubmit={submit} className="mt-4 space-y-3">
-        <input className="w-full rounded border px-3 py-2" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <input type="email" required className="w-full rounded border px-3 py-2" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
         <select className="w-full rounded border px-3 py-2" value={role} onChange={(e) => setRole(e.target.value)}>
           <option>Cadet</option>
           <option>Officer</option>
@@ -131,7 +131,8 @@ function Landing() {
 function CadetDashboard() {
   const { token, user, logout } = useAuth()
   const loc = useLocation()
-  const apiBase = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3002'
+  const envBase = (import.meta as any).env?.VITE_API_URL
+  const apiBase = envBase && !String(envBase).includes('your-api-host.example.com') ? envBase : 'http://localhost:3001'
   const [grades, setGrades] = React.useState<{ attendance: number; militaryAptitude: number; exams: number } | null>(null)
   const [files, setFiles] = React.useState<any[]>([])
   const [total, setTotal] = React.useState(0)
@@ -394,7 +395,8 @@ function CadetDashboard() {
 function Shell() {
   const { user, token } = useAuth()
   const loc = useLocation()
-  const apiBase = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3002'
+  const envBase = (import.meta as any).env?.VITE_API_URL
+  const apiBase = envBase && !String(envBase).includes('your-api-host.example.com') ? envBase : 'http://localhost:3001'
   const [unread, setUnread] = React.useState(0)
   const [theme, setTheme] = React.useState<'light' | 'dark'>(() => (localStorage.getItem('theme') as any) || 'light')
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false)
@@ -540,7 +542,8 @@ function Shell() {
 function OfficerDashboard() {
   const { token, user, logout } = useAuth()
   const loc = useLocation()
-  const apiBase = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3002'
+  const envBase = (import.meta as any).env?.VITE_API_URL
+  const apiBase = envBase && !String(envBase).includes('your-api-host.example.com') ? envBase : 'http://localhost:3001'
   const [files, setFiles] = React.useState<any[]>([])
   const [total, setTotal] = React.useState(0)
   const [page, setPage] = React.useState(1)
@@ -717,7 +720,8 @@ function OfficerDashboard() {
 function CoordinatorDashboard() {
   const { token, user, logout } = useAuth()
   const loc = useLocation()
-  const apiBase = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3002'
+  const envBase = (import.meta as any).env?.VITE_API_URL
+  const apiBase = envBase && !String(envBase).includes('your-api-host.example.com') ? envBase : 'http://localhost:3001'
   const [files, setFiles] = React.useState<any[]>([])
   const [total, setTotal] = React.useState(0)
   const [page, setPage] = React.useState(1)
@@ -863,7 +867,8 @@ function CoordinatorDashboard() {
 function StaffDashboard() {
   const { token, user, logout } = useAuth()
   const loc = useLocation()
-  const apiBase = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3002'
+  const envBase = (import.meta as any).env?.VITE_API_URL
+  const apiBase = envBase && !String(envBase).includes('your-api-host.example.com') ? envBase : 'http://localhost:3001'
   const [logs, setLogs] = React.useState<any[]>([])
   const [qr, setQr] = React.useState('')
   const videoRef = React.useRef<HTMLVideoElement | null>(null)
@@ -958,7 +963,8 @@ function StaffDashboard() {
 function AdminDashboard() {
   const { token, user, logout } = useAuth()
   const loc = useLocation()
-  const apiBase = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3002'
+  const envBase = (import.meta as any).env?.VITE_API_URL
+  const apiBase = envBase && !String(envBase).includes('your-api-host.example.com') ? envBase : 'http://localhost:3001'
   const [workflow, setWorkflow] = React.useState<any>(null)
   const [users, setUsers] = React.useState<any[]>([])
   const [form, setForm] = React.useState({ email: '', role: 'Cadet' })
@@ -1038,7 +1044,8 @@ function AdminDashboard() {
 function CommanderDashboard() {
   const { token, user, logout } = useAuth()
   const loc = useLocation()
-  const apiBase = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3002'
+  const envBase = (import.meta as any).env?.VITE_API_URL
+  const apiBase = envBase && !String(envBase).includes('your-api-host.example.com') ? envBase : 'http://localhost:3001'
   const [analytics, setAnalytics] = React.useState<any>(null)
   React.useEffect(() => {
     if (!token) return
