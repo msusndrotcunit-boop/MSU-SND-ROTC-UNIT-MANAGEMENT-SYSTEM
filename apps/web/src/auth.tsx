@@ -13,8 +13,35 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'))
   const [user, setUser] = useState<User>(null)
-  const envBase = (import.meta as any).env?.VITE_API_URL
-  const apiBase = envBase && !String(envBase).includes('your-api-host.example.com') ? envBase : 'http://localhost:3001'
+  const [apiBase, setApiBase] = useState<string>(() => {
+    const envBase = (import.meta as any).env?.VITE_API_URL
+    const cached = localStorage.getItem('apiBase') || ''
+    const usableEnv = envBase && !String(envBase).includes('your-api-host.example.com') ? String(envBase) : ''
+    return usableEnv || cached || 'http://localhost:3001'
+  })
+  useEffect(() => {
+    let cancelled = false
+    async function probe() {
+      const candidates = [apiBase, 'http://localhost:3001', 'http://localhost:3005'].filter((v, i, arr) => v && arr.indexOf(v) === i)
+      for (const base of candidates) {
+        try {
+          const ctrl = new AbortController()
+          const t = setTimeout(() => ctrl.abort(), 1200)
+          const res = await fetch(`${base}/health`, { signal: ctrl.signal })
+          clearTimeout(t)
+          if (res.ok) {
+            if (!cancelled) {
+              setApiBase(base)
+              localStorage.setItem('apiBase', base)
+            }
+            break
+          }
+        } catch {}
+      }
+    }
+    probe()
+    return () => { cancelled = true }
+  }, [])
 
   useEffect(() => {
     if (!token) return
