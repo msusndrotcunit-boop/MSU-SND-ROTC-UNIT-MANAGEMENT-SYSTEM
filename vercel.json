@@ -1,0 +1,15 @@
+{
+  "buildCommand": "npm ci && npm run build -w apps/web",
+  "outputDirectory": "apps/web/dist",
+  "devCommand": "npm run dev:web",
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/cadet", "destination": "/" },
+    { "source": "/officer", "destination": "/" },
+    { "source": "/coordinator", "destination": "/" },
+    { "source": "/staff", "destination": "/" },
+    { "source": "/admin", "destination": "/" },
+    { "source": "/commander", "destination": "/" },
+    { "source": "/login", "destination": "/" }
+  ]
+}
