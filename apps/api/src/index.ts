@@ -270,6 +270,24 @@ app.get('/admin/staff/attendance', async (req, reply) => {
   return await listAllAttendance()
 })
 
+app.get('/admin/files', async (req, reply) => {
+  const u = verify(req)
+  if (!u) return reply.code(401).send({ error: 'Unauthorized' })
+  if (u.role !== 'System Admin') return reply.code(403).send({ error: 'Forbidden' })
+  let data: FileMeta[] = await listAllFiles() as FileMeta[]
+  const q = req.query as any
+  const page = Math.max(1, Number(q?.page ?? 1))
+  const pageSize = Math.max(1, Math.min(50, Number(q?.pageSize ?? 10)))
+  const status = typeof q?.status === 'string' && ['Pending', 'Approved', 'Rejected'].includes(q.status) ? q.status : undefined
+  const fileType = typeof q?.fileType === 'string' && ['Excuse', 'Medical', 'Complaint'].includes(q.fileType) ? q.fileType : undefined
+  const sort = typeof q?.sort === 'string' && ['asc', 'desc'].includes(q.sort) ? q.sort : 'desc'
+  if (status) data = data.filter((f) => f.status === status)
+  if (fileType) data = data.filter((f) => f.fileType === fileType)
+  data = data.sort((a, b) => (sort === 'asc' ? a.createdAt.localeCompare(b.createdAt) : b.createdAt.localeCompare(a.createdAt)))
+  const start = (page - 1) * pageSize
+  const end = start + pageSize
+  return { items: data.slice(start, end), total: data.length, page, pageSize }
+})
 app.get('/admin/users', async (req, reply) => {
   const u = verify(req)
   if (!u) return reply.code(401).send({ error: 'Unauthorized' })

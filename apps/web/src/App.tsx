@@ -268,13 +268,14 @@ function CadetDashboard() {
         <div id="cadet-upload" className="rounded-lg border bg-white p-4">
           <h3 className="card-title flex items-center gap-2"><IconFile /> File Upload</h3>
           <div className="mt-3 space-y-2">
-            <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+            <label className="text-sm font-medium" htmlFor="cadet-file-input">Select file</label>
+            <input id="cadet-file-input" aria-describedby="cadet-upload-progress" type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} />
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
               <button type="button" disabled={!file} onClick={() => upload('Excuse')} className="btn btn-primary disabled:opacity-50 flex items-center gap-2 w-full"><IconUpload /> Upload Excuse</button>
               <button type="button" disabled={!file} onClick={() => upload('Medical')} className="btn btn-success disabled:opacity-50 flex items-center gap-2 w-full"><IconUpload /> Upload Medical</button>
               <button type="button" disabled={!file} onClick={() => upload('Complaint')} className="btn btn-secondary disabled:opacity-50 flex items-center gap-2 w-full"><IconUpload /> Upload Complaint</button>
             </div>
-            <div className="progress"><div style={{ width: `${uploadProgress}%` }} /></div>
+            <div id="cadet-upload-progress" className="progress" aria-label="Upload progress"><div style={{ width: `${uploadProgress}%` }} /></div>
           </div>
           <h4 id="cadet-files" className="mt-4 font-medium">File Status</h4>
           {files.length > 0 ? (
@@ -393,7 +394,7 @@ function CadetDashboard() {
 }
 
 function Shell() {
-  const { user, token } = useAuth()
+  const { user, token, logout } = useAuth()
   const loc = useLocation()
   const envBase = (import.meta as any).env?.VITE_API_URL
   const apiBase = envBase && !String(envBase).includes('your-api-host.example.com') ? envBase : 'http://localhost:3001'
@@ -459,7 +460,7 @@ function Shell() {
                 <NavLink to="/cadet?view=upload" onClick={() => setMobileMenuOpen(false)}>Upload File</NavLink>
                 <NavLink to="/cadet?view=files" onClick={() => setMobileMenuOpen(false)}>My Files</NavLink>
                 <NavLink to="/cadet?view=grades" onClick={() => setMobileMenuOpen(false)}>My Grades</NavLink>
-                <NavLink to="/" onClick={() => setMobileMenuOpen(false)}>Logout</NavLink>
+                <NavLink to="/" onClick={() => { logout(); setMobileMenuOpen(false) }}>Logout</NavLink>
               </nav>
             )}
             {user?.role === 'Officer' && (
@@ -468,7 +469,7 @@ function Shell() {
                 <NavLink to="/officer?view=files" onClick={() => setMobileMenuOpen(false)}>Assigned Cadets</NavLink>
                 <NavLink to="/officer?view=files" onClick={() => setMobileMenuOpen(false)}>File Review</NavLink>
                 <NavLink to="/officer?view=messages" onClick={() => setMobileMenuOpen(false)}>Messages</NavLink>
-                <NavLink to="/" onClick={() => setMobileMenuOpen(false)}>Logout</NavLink>
+                <NavLink to="/" onClick={() => { logout(); setMobileMenuOpen(false) }}>Logout</NavLink>
               </nav>
             )}
             {user && (user.role === 'ROTC Coordinator' || user.role === 'NSTP Coordinator') && (
@@ -478,14 +479,14 @@ function Shell() {
                 <NavLink to="/coordinator?view=files" onClick={() => setMobileMenuOpen(false)}>File Submissions</NavLink>
                 <NavLink to="/coordinator?view=messages" onClick={() => setMobileMenuOpen(false)}>Messages</NavLink>
                 <NavLink to="/coordinator?view=analytics" onClick={() => setMobileMenuOpen(false)}>Analytics</NavLink>
-                <NavLink to="/" onClick={() => setMobileMenuOpen(false)}>Logout</NavLink>
+                <NavLink to="/" onClick={() => { logout(); setMobileMenuOpen(false) }}>Logout</NavLink>
               </nav>
             )}
             {user?.role === 'Staff' && (
               <nav>
                 <NavLink to="/staff" end onClick={() => setMobileMenuOpen(false)}>Dashboard</NavLink>
                 <NavLink to="/staff?view=history" onClick={() => setMobileMenuOpen(false)}>Attendance History</NavLink>
-                <NavLink to="/" onClick={() => setMobileMenuOpen(false)}>Logout</NavLink>
+                <NavLink to="/" onClick={() => { logout(); setMobileMenuOpen(false) }}>Logout</NavLink>
               </nav>
             )}
             {user?.role === 'System Admin' && (
@@ -497,7 +498,7 @@ function Shell() {
                 <NavLink to="/admin?view=grades" onClick={() => setMobileMenuOpen(false)}>Grades Overview</NavLink>
                 <NavLink to="/admin?view=attendance" onClick={() => setMobileMenuOpen(false)}>Attendance Overview</NavLink>
                 <NavLink to="/admin?view=logs" onClick={() => setMobileMenuOpen(false)}>System Logs</NavLink>
-                <NavLink to="/" onClick={() => setMobileMenuOpen(false)}>Logout</NavLink>
+                <NavLink to="/" onClick={() => { logout(); setMobileMenuOpen(false) }}>Logout</NavLink>
               </nav>
             )}
             {user && (user.role === 'Corp Commander' || user.role === 'Commandant') && (
@@ -505,7 +506,7 @@ function Shell() {
                 <NavLink to="/commander" end onClick={() => setMobileMenuOpen(false)}>Dashboard</NavLink>
                 <NavLink to="/commander?view=cadets" onClick={() => setMobileMenuOpen(false)}>Cadets</NavLink>
                 <NavLink to="/commander?view=analytics" onClick={() => setMobileMenuOpen(false)}>Analytics</NavLink>
-                <NavLink to="/" onClick={() => setMobileMenuOpen(false)}>Logout</NavLink>
+                <NavLink to="/" onClick={() => { logout(); setMobileMenuOpen(false) }}>Logout</NavLink>
               </nav>
             )}
           </aside>
@@ -604,11 +605,14 @@ function OfficerDashboard() {
   }
   async function sendMessage(toRole: string, content: string) {
     if (!token) return
-    await fetch(`${apiBase}/messages`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ toRole, content })
-    })
+    const targets = toRole === 'Coordinator' ? ['ROTC Coordinator', 'NSTP Coordinator'] : [toRole]
+    for (const tr of targets) {
+      await fetch(`${apiBase}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ toRole: tr, content })
+      })
+    }
   }
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
@@ -699,8 +703,8 @@ function OfficerDashboard() {
       </div>
       {modal && (
         <div className="modal-backdrop" onClick={() => setModal(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h4 className="font-semibold">{modal.action} Submission</h4>
+          <div className="modal" role="dialog" aria-modal="true" aria-labelledby="officer-modal-title" onClick={(e) => e.stopPropagation()}>
+            <h4 id="officer-modal-title" className="font-semibold">{modal.action} Submission</h4>
             <p className="mt-2 text-sm">Add remarks (optional):</p>
             <textarea className="mt-2 w-full rounded border px-2 py-1" rows={3} value={remark[modal.id] || ''} onChange={(e) => setRemark((r) => ({ ...r, [modal.id]: e.target.value }))} />
             <div className="mt-3 flex items-center gap-2">
@@ -731,6 +735,10 @@ function CoordinatorDashboard() {
   const [sortOrder, setSortOrder] = React.useState<'Newest' | 'Oldest'>('Newest')
   const [remark, setRemark] = React.useState<Record<string, string>>({})
   const [toast, setToast] = React.useState('')
+  const [inbox, setInbox] = React.useState<any[]>([])
+  const [inboxTotal, setInboxTotal] = React.useState(0)
+  const [inboxPage, setInboxPage] = React.useState(1)
+  const [inboxPageSize, setInboxPageSize] = React.useState(10)
   React.useEffect(() => {
     if (!token) return
     const qs = new URLSearchParams({
@@ -747,6 +755,20 @@ function CoordinatorDashboard() {
         setTotal(d.total ?? 0)
       })
   }, [token, page, pageSize, statusFilter, typeFilter, sortOrder, apiBase])
+  React.useEffect(() => {
+    if (!token) return
+    Promise.all([
+      fetch(`${apiBase}/messages?toRole=ROTC%20Coordinator&page=${inboxPage}&pageSize=${inboxPageSize}`),
+      fetch(`${apiBase}/messages?toRole=NSTP%20Coordinator&page=${inboxPage}&pageSize=${inboxPageSize}`)
+    ]).then(async ([a, b]) => {
+      const da = a.ok ? await a.json() : { items: [], total: 0 }
+      const db = b.ok ? await b.json() : { items: [], total: 0 }
+      const items = [...(da.items ?? []), ...(db.items ?? [])].sort((x: any, y: any) => String(y.createdAt).localeCompare(String(x.createdAt)))
+      const total = Number(da.total || 0) + Number(db.total || 0)
+      setInbox(items)
+      setInboxTotal(total)
+    })
+  }, [token, inboxPage, inboxPageSize, apiBase])
   React.useEffect(() => {
     const v = new URLSearchParams(loc.search).get('view') || ''
     const id = v === 'files' ? 'coord-files' : v === 'analytics' ? 'coord-analytics' : v === 'messages' ? 'coord-messages' : ''
@@ -860,6 +882,50 @@ function CoordinatorDashboard() {
         <h3 className="card-title">Analytics</h3>
         <p className="text-sm text-gray-600">Overview coming soon</p>
       </div>
+      <div id="coord-messages" className="rounded-lg border bg-white p-4 mt-4">
+        <h3 className="card-title flex items-center gap-2"><IconMessage /> Messages</h3>
+        <div className="mt-2 space-y-2">
+          <button type="button" onClick={() => {
+            if (!token) return
+            fetch(`${apiBase}/messages`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+              body: JSON.stringify({ toRole: 'Cadet', content: 'Coordinator announcement to Cadets.' })
+            })
+          }} className="btn btn-primary flex items-center gap-2"><IconMessage /> Message Cadets</button>
+          <button type="button" onClick={() => {
+            if (!token) return
+            fetch(`${apiBase}/messages`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+              body: JSON.stringify({ toRole: 'Officer', content: 'Coordinator note to Officers.' })
+            })
+          }} className="btn btn-secondary flex items-center gap-2"><IconMessage /> Message Officers</button>
+        </div>
+        <h4 className="mt-4 font-medium">Inbox</h4>
+        <ul className="mt-2 space-y-2">
+          {inbox.map((m) => (
+            <li key={m.id} className="rounded border p-2 text-sm">
+              <div className="flex items-center justify-between">
+                <span>{m.content}</span>
+                <span className="text-gray-500">{new Date(m.createdAt).toLocaleString()}</span>
+              </div>
+            </li>
+          ))}
+          {inbox.length === 0 && <li className="text-sm text-gray-600">No messages</li>}
+        </ul>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button type="button" disabled={inboxPage <= 1} onClick={() => setInboxPage((p) => Math.max(1, p - 1))} className="rounded border px-2 py-1 disabled:opacity-50 w-full sm:w-auto">Prev</button>
+          <button type="button" disabled={inboxPage * inboxPageSize >= inboxTotal} onClick={() => setInboxPage((p) => p + 1)} className="rounded border px-2 py-1 disabled:opacity-50 w-full sm:w-auto">Next</button>
+          <span className="text-sm text-gray-600">Page {inboxPage}</span>
+          <select className="rounded border px-2 py-1 w-full sm:w-auto" value={inboxPageSize} onChange={(e) => { setInboxPage(1); setInboxPageSize(Number(e.target.value)) }}>
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+          </select>
+          <span className="ml-auto text-xs text-gray-600">Showing {Math.min(inboxTotal, (inboxPage - 1) * inboxPageSize + (inbox.length ? 1 : 0))}-{Math.min(inboxTotal, inboxPage * inboxPageSize)} of {inboxTotal}</span>
+        </div>
+      </div>
     </div>
   )
 }
@@ -968,6 +1034,19 @@ function AdminDashboard() {
   const [workflow, setWorkflow] = React.useState<any>(null)
   const [users, setUsers] = React.useState<any[]>([])
   const [form, setForm] = React.useState({ email: '', role: 'Cadet' })
+  const [files, setFiles] = React.useState<any[]>([])
+  const [totalFiles, setTotalFiles] = React.useState(0)
+  const [filesPage, setFilesPage] = React.useState(1)
+  const [filesPageSize, setFilesPageSize] = React.useState(10)
+  const [filesStatus, setFilesStatus] = React.useState<'All' | 'Pending' | 'Approved' | 'Rejected'>('All')
+  const [filesType, setFilesType] = React.useState<'All' | 'Excuse' | 'Medical' | 'Complaint'>('All')
+  const [filesSort, setFilesSort] = React.useState<'Newest' | 'Oldest'>('Newest')
+  const [analytics, setAnalytics] = React.useState<any>(null)
+  const [attendance, setAttendance] = React.useState<any[]>([])
+  const [logs, setLogs] = React.useState<any[]>([])
+  const [logsTotal, setLogsTotal] = React.useState(0)
+  const [logsPage, setLogsPage] = React.useState(1)
+  const [logsPageSize, setLogsPageSize] = React.useState(10)
   React.useEffect(() => {
     if (!token) return
     fetch(`${apiBase}/admin/workflow`, { headers: { Authorization: `Bearer ${token}` } })
@@ -976,10 +1055,47 @@ function AdminDashboard() {
     fetch(`${apiBase}/admin/users`, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => (r.ok ? r.json() : []))
       .then((d) => setUsers(d))
+    fetch(`${apiBase}/analytics`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setAnalytics(d))
+    fetch(`${apiBase}/admin/staff/attendance`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => setAttendance(d))
   }, [token, apiBase])
   React.useEffect(() => {
+    if (!token) return
+    const qs = new URLSearchParams({
+      page: String(filesPage),
+      pageSize: String(filesPageSize),
+      status: filesStatus === 'All' ? '' : filesStatus,
+      fileType: filesType === 'All' ? '' : filesType,
+      sort: filesSort === 'Newest' ? 'desc' : 'asc'
+    })
+    fetch(`${apiBase}/admin/files?${qs.toString()}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => (r.ok ? r.json() : { items: [], total: 0, page: filesPage, pageSize: filesPageSize }))
+      .then((d) => {
+        setFiles(d.items ?? [])
+        setTotalFiles(d.total ?? 0)
+      })
+  }, [token, filesPage, filesPageSize, filesStatus, filesType, filesSort, apiBase])
+  React.useEffect(() => {
+    if (!token) return
+    fetch(`${apiBase}/messages?toRole=System%20Admin&page=${logsPage}&pageSize=${logsPageSize}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => (r.ok ? r.json() : { items: [], total: 0, page: logsPage, pageSize: logsPageSize }))
+      .then((d) => {
+        setLogs(d.items ?? [])
+        setLogsTotal(d.total ?? 0)
+      })
+  }, [token, logsPage, logsPageSize, apiBase])
+  React.useEffect(() => {
     const v = new URLSearchParams(loc.search).get('view') || ''
-    const id = v === 'workflow' ? 'admin-workflow' : v === 'users' ? 'admin-users' : ''
+    const id =
+      v === 'workflow' ? 'admin-workflow' :
+      v === 'users' ? 'admin-users' :
+      v === 'files' ? 'admin-files' :
+      v === 'grades' ? 'admin-grades' :
+      v === 'attendance' ? 'admin-attendance' :
+      v === 'logs' ? 'admin-logs' : ''
     if (id) document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
   }, [loc])
   async function setRole() {
@@ -1036,6 +1152,139 @@ function AdminDashboard() {
             {users.length === 0 && <li className="text-sm text-gray-600">No users</li>}
           </ul>
         </div>
+        <div id="admin-files" className="rounded-lg border bg-white p-4 md:col-span-2">
+          <h3 className="card-title flex items-center gap-2"><IconFile /> File Repository</h3>
+          {files.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>File Name</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Cadet</th>
+                    <th>Remarks</th>
+                    <th>Submitted At</th>
+                    <th>Link</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {files.map((f) => (
+                    <tr key={f.id}>
+                      <td>{f.filename}</td>
+                      <td>{f.fileType}</td>
+                      <td><span className={f.status === 'Approved' ? 'badge badge-approved' : f.status === 'Rejected' ? 'badge badge-rejected' : 'badge badge-pending'}>{f.status}</span></td>
+                      <td>{f.cadetId}</td>
+                      <td>{f.remark || '-'}</td>
+                      <td>{new Date(f.createdAt).toLocaleString()}</td>
+                      <td>{f.url ? <a className="text-blue-600 underline" href={f.url} target="_blank" rel="noreferrer">Open</a> : '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-600">No files</p>
+          )}
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button type="button" disabled={filesPage <= 1} onClick={() => setFilesPage((p) => Math.max(1, p - 1))} className="rounded border px-2 py-1 disabled:opacity-50 w-full sm:w-auto">Prev</button>
+            <button type="button" disabled={filesPage * filesPageSize >= totalFiles} onClick={() => setFilesPage((p) => p + 1)} className="rounded border px-2 py-1 disabled:opacity-50 w-full sm:w-auto">Next</button>
+            <span className="text-sm text-gray-600">Page {filesPage}</span>
+            <select className="rounded border px-2 py-1 w-full sm:w-auto" value={filesPageSize} onChange={(e) => { setFilesPage(1); setFilesPageSize(Number(e.target.value)) }}>
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+            </select>
+            <select className="rounded border px-2 py-1 w-full sm:w-auto" value={filesStatus} onChange={(e) => { setFilesPage(1); setFilesStatus(e.target.value as any) }}>
+              <option value="All">All Statuses</option>
+              <option value="Pending">Pending</option>
+              <option value="Approved">Approved</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+            <select className="rounded border px-2 py-1 w-full sm:w-auto" value={filesType} onChange={(e) => { setFilesPage(1); setFilesType(e.target.value as any) }}>
+              <option value="All">All Types</option>
+              <option value="Excuse">Excuse</option>
+              <option value="Medical">Medical</option>
+              <option value="Complaint">Complaint</option>
+            </select>
+            <select className="rounded border px-2 py-1 w-full sm:w-auto" value={filesSort} onChange={(e) => { setFilesPage(1); setFilesSort(e.target.value as any) }}>
+              <option value="Newest">Newest</option>
+              <option value="Oldest">Oldest</option>
+            </select>
+            <span className="ml-auto text-xs text-gray-600">Showing {Math.min(totalFiles, (filesPage - 1) * filesPageSize + (files.length ? 1 : 0))}-{Math.min(totalFiles, filesPage * filesPageSize)} of {totalFiles}</span>
+          </div>
+        </div>
+        <div id="admin-grades" className="rounded-lg border bg-white p-4">
+          <h3 className="card-title flex items-center gap-2"><IconGrades /> Grades Overview</h3>
+          {analytics ? (
+            <div className="space-y-2 text-sm">
+              <div className="font-medium">Submissions</div>
+              <ul className="list-disc pl-5">
+                {analytics.submissions.map((s: any) => <li key={s.type}>{s.type}: {s.count}</li>)}
+              </ul>
+              <div className="font-medium">Grade Averages</div>
+              <ul className="list-disc pl-5">
+                <li>Attendance: {analytics.averages.attendance}</li>
+                <li>Military Aptitude: {analytics.averages.militaryAptitude}</li>
+                <li>Exams: {analytics.averages.exams}</li>
+              </ul>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-600">Loading...</p>
+          )}
+        </div>
+        <div id="admin-attendance" className="rounded-lg border bg-white p-4">
+          <h3 className="card-title flex items-center gap-2"><IconQR /> Attendance Overview</h3>
+          {attendance.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Staff</th>
+                    <th>Timestamp</th>
+                    <th>QR</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {attendance.map((a) => (
+                    <tr key={`${a.staff}-${a.timestamp}`}>
+                      <td>{a.staff}</td>
+                      <td>{new Date(a.timestamp).toLocaleString()}</td>
+                      <td>{a.qr}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-600">No attendance records</p>
+          )}
+        </div>
+        <div id="admin-logs" className="rounded-lg border bg-white p-4 md:col-span-2">
+          <h3 className="card-title flex items-center gap-2"><IconMessage /> System Logs</h3>
+          <ul className="mt-2 space-y-2">
+            {logs.map((m) => (
+              <li key={m.id} className="rounded border p-2 text-sm">
+                <div className="flex items-center justify-between">
+                  <span>{m.content}</span>
+                  <span className="text-gray-500">{new Date(m.createdAt).toLocaleString()}</span>
+                </div>
+              </li>
+            ))}
+            {logs.length === 0 && <li className="text-sm text-gray-600">No logs</li>}
+          </ul>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button type="button" disabled={logsPage <= 1} onClick={() => setLogsPage((p) => Math.max(1, p - 1))} className="rounded border px-2 py-1 disabled:opacity-50 w-full sm:w-auto">Prev</button>
+            <button type="button" disabled={logsPage * logsPageSize >= logsTotal} onClick={() => setLogsPage((p) => p + 1)} className="rounded border px-2 py-1 disabled:opacity-50 w-full sm:w-auto">Next</button>
+            <span className="text-sm text-gray-600">Page {logsPage}</span>
+            <select className="rounded border px-2 py-1 w-full sm:w-auto" value={logsPageSize} onChange={(e) => { setLogsPage(1); setLogsPageSize(Number(e.target.value)) }}>
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+            </select>
+            <span className="ml-auto text-xs text-gray-600">Showing {Math.min(logsTotal, (logsPage - 1) * logsPageSize + (logs.length ? 1 : 0))}-{Math.min(logsTotal, logsPage * logsPageSize)} of {logsTotal}</span>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -1055,7 +1304,7 @@ function CommanderDashboard() {
   }, [token, apiBase])
   React.useEffect(() => {
     const v = new URLSearchParams(loc.search).get('view') || ''
-    const id = v === 'analytics' ? 'commander-analytics' : ''
+    const id = v === 'analytics' ? 'commander-analytics' : v === 'cadets' ? 'commander-cadets' : ''
     if (id) document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
   }, [loc])
   return (
@@ -1079,6 +1328,20 @@ function CommanderDashboard() {
               <li>Attendance: {analytics.averages.attendance}</li>
               <li>Military Aptitude: {analytics.averages.militaryAptitude}</li>
               <li>Exams: {analytics.averages.exams}</li>
+            </ul>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-600">Loading...</p>
+        )}
+      </div>
+      <div id="commander-cadets" className="rounded-lg border bg-white p-4 mt-4">
+        <h3 className="card-title">Cadet Overview</h3>
+        {analytics ? (
+          <div className="space-y-2 text-sm">
+            <div>Total submissions: {analytics.submissions.reduce((sum: number, s: any) => sum + (s.count || 0), 0)}</div>
+            <div>Types:</div>
+            <ul className="list-disc pl-5">
+              {analytics.submissions.map((s: any) => <li key={s.type}>{s.type}: {s.count}</li>)}
             </ul>
           </div>
         ) : (
