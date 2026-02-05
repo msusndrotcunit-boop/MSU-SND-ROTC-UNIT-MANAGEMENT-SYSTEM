@@ -1,0 +1,21 @@
+{
+  "name": "msu-snd-rotc-portal",
+  "private": true,
+  "version": "0.1.0",
+  "description": "MSU-SND ROTC Management System monorepo (web + api)",
+  "workspaces": [
+    "apps/web",
+    "apps/api"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev -w apps/web",
+    "dev:api": "npm run dev -w apps/api",
+    "build:web": "npm run build -w apps/web",
+    "build:api": "npm run build -w apps/api",
+    "dev": "concurrently -n web,api -c green,blue \"npm run dev -w apps/web\" \"npm run dev -w apps/api\"",
+    "build": "npm run build:web && npm run build:api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}
