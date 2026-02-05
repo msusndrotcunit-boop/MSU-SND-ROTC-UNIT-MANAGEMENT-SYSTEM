@@ -401,6 +401,7 @@ function Shell() {
   const [unread, setUnread] = React.useState(0)
   const [theme, setTheme] = React.useState<'light' | 'dark'>(() => (localStorage.getItem('theme') as any) || 'light')
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false)
   React.useEffect(() => {
     document.documentElement.classList.toggle('theme-dark', theme === 'dark')
     localStorage.setItem('theme', theme)
@@ -421,6 +422,7 @@ function Shell() {
           <Link to="/" className="text-xl font-semibold flex items-center gap-2"><IconShield /> MSU-SND ROTC Management System</Link>
           <div className="flex items-center gap-3">
             <button type="button" className="btn btn-outline md:hidden" aria-expanded={mobileMenuOpen} aria-controls="sidebar" onClick={() => setMobileMenuOpen((v) => !v)}>Menu</button>
+            <button type="button" className="btn btn-outline hidden md:flex" aria-expanded={!sidebarCollapsed} aria-controls="sidebar" onClick={() => setSidebarCollapsed((v) => !v)}>{sidebarCollapsed ? 'Expand' : 'Collapse'}</button>
             {user?.role === 'Cadet' && (
               <span className="inline-flex items-center gap-2">
                 <IconBell />
@@ -447,7 +449,7 @@ function Shell() {
       ) : (
         <div className="mx-auto max-w-6xl app-shell">
           {mobileMenuOpen && <div className="sidebar-backdrop md:hidden" onClick={() => setMobileMenuOpen(false)} />}
-          <aside id="sidebar" className={`sidebar ${mobileMenuOpen ? 'open' : ''}`}>
+          <aside id="sidebar" className={`sidebar ${mobileMenuOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
             {!user && (
               <nav>
                 <NavLink to="/" end onClick={() => setMobileMenuOpen(false)}>Home</NavLink>
@@ -485,6 +487,7 @@ function Shell() {
             {user?.role === 'Staff' && (
               <nav>
                 <NavLink to="/staff" end onClick={() => setMobileMenuOpen(false)}>Dashboard</NavLink>
+                <NavLink to="/staff?view=scanner" onClick={() => setMobileMenuOpen(false)}>Scanner</NavLink>
                 <NavLink to="/staff?view=history" onClick={() => setMobileMenuOpen(false)}>Attendance History</NavLink>
                 <NavLink to="/" onClick={() => { logout(); setMobileMenuOpen(false) }}>Logout</NavLink>
               </nav>
